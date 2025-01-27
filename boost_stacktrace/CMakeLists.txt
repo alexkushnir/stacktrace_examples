@@ -1,0 +1,53 @@
+set(PROJECT_NAME "boost-stacktrace")
+project(${PROJECT_NAME})
+
+set(PRINT_CALLSTACK "print-callstack")
+set(ASSERT_MESSAGE "assert-message")
+set(EXCEPTION_HANDLER "exception-handler")
+set(DUMP_STACKTRACE "dump-stacktrace")
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	if(POLICY CMP0167)
+	  cmake_policy(SET CMP0167 NEW)
+	endif()
+	set(BOOST_ROOT "C:/Boost")
+	find_package(Boost 1.87 REQUIRED COMPONENTS stacktrace_windbg stacktrace_from_exception)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	find_package(Boost 1.87 REQUIRED COMPONENTS stacktrace_basic stacktrace_backtrace stacktrace_from_exception)
+endif()
+
+include_directories(Boost_INCLUDE_DIRS)
+add_compile_definitions(BOOST_STACKTRACE_USE_BACKTRACE)
+
+add_executable(${PRINT_CALLSTACK} "print_callstack.cpp")
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	message(STATUS "Configuring for Windows")
+	target_link_libraries(${PRINT_CALLSTACK} Boost::stacktrace_windbg)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	message(STATUS "Configuring for Windows")
+	target_link_libraries(${PRINT_CALLSTACK} Boost::stacktrace_basic Boost::stacktrace_backtrace)
+endif()
+
+add_executable(${ASSERT_MESSAGE} "assert_message.cpp")
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	target_link_libraries(${ASSERT_MESSAGE} Boost::stacktrace_windbg)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_link_libraries(${ASSERT_MESSAGE} Boost::stacktrace_basic Boost::stacktrace_backtrace)
+endif()
+
+target_compile_definitions(${ASSERT_MESSAGE} PRIVATE BOOST_ENABLE_ASSERT_DEBUG_HANDLER)
+
+add_executable(${EXCEPTION_HANDLER} "exception_handler.cpp")
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	target_link_libraries(${EXCEPTION_HANDLER} Boost::stacktrace_windbg)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	# stacktrace_from_exception may consume more memory
+	target_link_libraries(${EXCEPTION_HANDLER} Boost::stacktrace_basic Boost::stacktrace_backtrace Boost::stacktrace_from_exception)
+endif()
+
+add_executable(${DUMP_STACKTRACE} "dump_stacktrace.cpp")
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	target_link_libraries(${DUMP_STACKTRACE} Boost::stacktrace_windbg)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_link_libraries(${DUMP_STACKTRACE} Boost::stacktrace_basic Boost::stacktrace_backtrace)
+endif()
